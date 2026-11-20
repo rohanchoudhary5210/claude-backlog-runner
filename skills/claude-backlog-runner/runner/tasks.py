@@ -2,6 +2,17 @@
 from __future__ import annotations
 
 
+TEMPLATES = ("tests", "docs", "deadcode", "lint")
+
+
+def template_for(labels: set[str]) -> str | None:
+    """Name of the first known `template:<name>` label, if any."""
+    for name in TEMPLATES:
+        if f"template:{name}" in labels:
+            return name
+    return None
+
+
 def _labels(issue: dict) -> set[str]:
     return {l.get("name", "") for l in issue.get("labels", [])}
 
@@ -39,7 +50,7 @@ def select_tasks(issues: list[dict], tonight: bool, limit: int, owner: str | Non
             continue
         if owner and _author(i) != owner.lower() and "approved" not in labels:
             continue
-        picked.append(i)
+        picked.append({**i, "template": template_for(labels)})
 
     def key(i):
         p = _priority(_labels(i))

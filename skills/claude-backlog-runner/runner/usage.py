@@ -13,10 +13,11 @@ DEFAULTS = {
     "max_tasks": 3,
     "fallback_max_tasks": 1,
     "max_age_minutes": 90,
+    "task_timeout_minutes": 30,
 }
 
 _PCTS = ("weekly_floor", "weekly_floor_near_reset", "five_hour_floor")
-_COUNTS = ("near_reset_hours", "max_tasks", "fallback_max_tasks", "max_age_minutes")
+_COUNTS = ("near_reset_hours", "max_tasks", "fallback_max_tasks", "max_age_minutes", "task_timeout_minutes")
 
 
 def validate_config(cfg: dict) -> list[str]:

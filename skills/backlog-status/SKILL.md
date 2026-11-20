@@ -25,7 +25,7 @@ Sort the issues into:
 - **Failed:** `runner:failed`.
 - **Done, PR to review:** `runner:done`, matched with the open PRs.
 
-Last run: the newest entry on the `runner-log` issue in `log_repo` — its latest comment, or the top of the issue body if summaries are written there. Note its time and its usage line.
+Last run: the newest entry on the `runner-log` issue in `log_repo` — its latest comment, or the top of the issue body if summaries are written there. Note its time and its usage line. If it has a `This week:` line, show it as is.
 
 Usage (PC only, optional): if `~/.claude/backlog-runner/usage.json` exists, run the gate from the `claude-backlog-runner` skill folder: `python3 -m runner gate --config <config>` (`py -3` on Windows), and report its `reason`.
 

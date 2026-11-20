@@ -12,5 +12,7 @@
   "five_hour_floor": 85,
   "max_tasks": 3,
   "fallback_max_tasks": 1,
-  "max_age_minutes": 90
+  "max_age_minutes": 90,
+  "task_timeout_minutes": 30,
+  "dry_run": false
 }

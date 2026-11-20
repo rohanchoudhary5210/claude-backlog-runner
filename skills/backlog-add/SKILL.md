@@ -30,6 +30,7 @@ One message can hold one task or many (a list, lines, or "and also…"). Make on
   - `safe` — small, low-risk and easy to review: a typo, a README line, a small bug fix, a test, a research note.
   - `ask-first` — anything bigger or riskier: touches many files, deletes code or data, adds or upgrades dependencies, changes auth, payments, secrets or public-facing text, or anything the user called important or said to check first.
   - If the user said "no need to ask" or "check with me", follow that.
+- **Template:** if the task is plainly one of these, add the label and keep the body to the scope: `template:tests` (add tests for X), `template:docs` (update/fix docs), `template:deadcode` (remove unused code), `template:lint` (fix lint/formatting).
 - **Priority:** add `priority:1` only if the user said urgent / first / important; otherwise none.
 
 Never add tasks that would need CI/workflow changes or secrets as `safe` — the runner refuses those; mark them `ask-first` and mention they'll need manual work.
