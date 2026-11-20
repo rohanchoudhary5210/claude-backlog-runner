@@ -1,0 +1,13 @@
+{
+  "repos": ["rohanchoudhary5210/Piasa-Dekh"],
+  "notes_repo": "rohanchoudhary5210/backlog-notes",
+  "log_repo": "rohanchoudhary5210/backlog-notes",
+  "git_name": "Rohan Choudhary",
+  "git_email": "rohanchoudhary5210@users.noreply.github.com",
+  "weekly_floor": 80,
+  "weekly_floor_near_reset": 95,
+  "near_reset_hours": 24,
+  "five_hour_floor": 85,
+  "max_tasks": 3,
+  "fallback_max_tasks": 1
+}
