@@ -7,7 +7,9 @@ description: Use when the user wants to set up, install or configure the backlog
 
 Do the whole setup for the user. They should only answer a few questions; never hand them a list of manual steps you could do yourself.
 
-`RUNNER_DIR` = the sibling folder `../claude-backlog-runner` next to this file (it holds `config.example.json` and `scripts/statusline_capture.sh`).
+`RUNNER_DIR` = the sibling folder `../claude-backlog-runner` next to this file (it holds `config.example.json` and `scripts/statusline_capture.py`).
+
+**Python:** `python3` below means Python 3. On Windows it's usually `py -3` (or `python`); find which one works first and use it everywhere, including in the config check, the statusline command and the scheduled prompt.
 
 **GitHub calls:** use `gh api …` (REST). If `gh` is missing or blocked, use the matching GitHub MCP tool (`mcp__github__*`). If neither works, stop and tell the user to connect GitHub (Cowork) or run `gh auth login` (PC).
 
@@ -16,6 +18,22 @@ Do the whole setup for the user. They should only answer a few questions; never 
 - Only create things. Never delete or rename labels, issues, repos or branches, and never change repo settings.
 - Never overwrite an existing `config.json` or `statusLine` setting without asking first.
 - Re-running setup must be safe: skip anything that already exists.
+
+## 0. Missing tools (PC)
+
+Check the tools first: `git --version`, `gh --version`, and the Python command (`python3 --version`, on Windows `py -3 --version`). If one is "not found" / "not recognized":
+
+1. Offer to install it. Windows: `winget install --id Git.Git -e`, `winget install --id GitHub.cli -e`, `winget install --id Python.Python.3.12 -e`. macOS: `brew install git gh python`. Linux: the system package manager.
+2. **A terminal that was already open doesn't see the new tool** — it keeps the old `PATH` — so "not found" can repeat right after a successful install. Don't retry in the same shell, and don't treat it as a failed install.
+   - **Windows:** run the next commands in a fresh shell that loads the updated `PATH`, e.g.
+     `powershell -NoProfile -Command "$env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User'); gh --version"`
+     If that works, keep using this pattern for the rest of setup.
+   - **macOS/Linux:** run `hash -r`, or start a new login shell (`bash -lc "gh --version"`).
+3. If the tool is still not found, it's the app's own environment that's stale. Tell the user plainly:
+   > `<tool>` is installed, but this window started before it was. Close this terminal window (and Claude Code), open a new terminal, and run `claude --continue` to pick up where we left off.
+
+   Then stop. Don't keep retrying in the old window.
+4. After installing `gh`, it needs a login: ask the user to run `gh auth login` in that new terminal (it opens the browser), then continue.
 
 ## 1. Find out what you can
 
@@ -68,15 +86,16 @@ In `backlog-notes`, create each issue only if no open issue has exactly that tit
 
 Build the config from `RUNNER_DIR/config.example.json` with the values from steps 1–2 (`repos` = chosen repos, `notes_repo` and `log_repo` = `<login>/backlog-notes`, `fallback_max_tasks` = 1).
 
-- **PC:** write it to `~/backlog-runner/config.json` (create the folder). Check it: from `RUNNER_DIR`, `python3 -m runner gate --config ~/backlog-runner/config.json` must print JSON whose `reason` doesn't start with `bad config`.
+- **PC:** write it to `~/backlog-runner/config.json` (create the folder). Check it: from `RUNNER_DIR`, `python3 -m runner gate --config ~/backlog-runner/config.json` must print JSON whose `reason` doesn't start with `bad config`, and `python3 -m runner now --tz <timezone>` must print the time. On Windows, if the second one mentions `tzdata`, run `py -3 -m pip install tzdata` and check again.
 - **Cloud:** keep it for the scheduled prompt in step 8.
 
 ## 7. Usage statusline (PC only)
 
-1. Check `jq` and `bash` work (on Windows, find Git Bash: `C:\Program Files\Git\bin\bash.exe`). If one is missing, offer to install it (`winget install jqlang.jq`); if they decline, skip this step and say runs will use the fallback cap.
+1. The tracker is a Python script — no `bash` or `jq` needed, on any OS.
 2. In `~/.claude/settings.json` (create it if missing, keep every other key), set:
-   `"statusLine": {"type": "command", "command": "bash <absolute path of RUNNER_DIR>/scripts/statusline_capture.sh"}`
-   On Windows use the quoted full Git Bash path instead of `bash`. If a `statusLine` already exists, ask before replacing it.
+   `"statusLine": {"type": "command", "command": "python3 \"<absolute path of RUNNER_DIR>/scripts/statusline_capture.py\""}`
+   using the Python command that works on this machine (`py -3` on Windows) and forward slashes in the path. If a `statusLine` already exists, ask before replacing it.
+   Test it: `echo {"rate_limits":{"five_hour":{"used_percentage":1}}} | <command>` should print `5h 1% · 7d ?%`.
 3. Tell them: restart Claude Code; the statusline should show `5h …% · 7d …%`. The script path contains the plugin version, so re-run this setup after a plugin update.
 
 ## 8. Schedule

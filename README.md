@@ -14,7 +14,7 @@ It never merges, never pushes to `main`, never closes issues.
 
 - A **Claude plan** with Claude Code and/or Cowork. The runner spends *your* leftover usage, so it runs on your own account.
 - A **GitHub account** with the repos you want the runner to work in.
-- **On a PC (Claude Code):** `git`, Python 3.9+, and the [`gh` CLI](https://cli.github.com) logged in (`gh auth login`). For usage tracking, also `jq` and `bash` (Git Bash on Windows). Windows users: see [Local setup (Windows)](#local-setup-windows) if a command isn't found.
+- **On a PC (Claude Code):** `git`, Python 3.9+, and the [`gh` CLI](https://cli.github.com) logged in (`gh auth login`). On Windows, Python is usually run as `py -3`: use that wherever this README says `python3`. Windows users: see [Local setup (Windows)](#local-setup-windows) if a command isn't found.
 - **In Cowork (cloud):** GitHub connected to Claude, with your repos included in its access. Nothing to install.
 
 ## Easy setup (2 steps, ~5 minutes)
@@ -150,14 +150,14 @@ Without this step, the runner still works, but does at most `fallback_max_tasks`
 
 1. Find the script. After a plugin install it's at:
    ```
-   ~/.claude/plugins/cache/backlog-runner/backlog-runner/<version>/skills/claude-backlog-runner/scripts/statusline_capture.sh
+   ~/.claude/plugins/cache/backlog-runner/backlog-runner/<version>/skills/claude-backlog-runner/scripts/statusline_capture.py
    ```
-   (`<version>` is e.g. `1.3.0`; it changes when the plugin updates, so redo this step after an update.)
+   (`<version>` is e.g. `1.4.0`; it changes when the plugin updates, so redo this step after an update.)
 2. Add this to `~/.claude/settings.json`, with the full path from above:
    ```json
-   "statusLine": { "type": "command", "command": "bash /full/path/to/statusline_capture.sh" }
+   "statusLine": { "type": "command", "command": "python3 \"/full/path/to/statusline_capture.py\"" }
    ```
-   On Windows, use Git Bash's full path: `"\"C:\\Program Files\\Git\\bin\\bash.exe\" C:/Users/<you>/.claude/plugins/cache/…/statusline_capture.sh"`.
+   On Windows, use `py -3` and forward slashes: `"py -3 \"C:/Users/<you>/.claude/plugins/cache/…/statusline_capture.py\""`. It's plain Python, so no `bash` or `jq` is needed.
 3. Restart Claude Code and send any message. The statusline should show something like `5h 12% · 7d 40%`, and `~/.claude/backlog-runner/usage.json` should exist. If it shows `usage n/a`, your plan doesn't send usage data to the statusline yet.
 
 ### Step 5: Schedule the runs
@@ -212,14 +212,16 @@ Problems hit while building and testing the runner, with the fix or workaround f
 
 **Personal use only.** Pooling several people's leftover Claude usage on one shared platform breaks Anthropic's terms: sharing a subscription or using it through a third-party app can get an account banned. So the runner only spends *your own* usage, from *your own* account.
 
-**No official usage API.** Nothing reports how much usage is left. The only source is the Claude Code statusline, which receives `rate_limits` as JSON. That's why `scripts/statusline_capture.sh` exists: it saves that data to `~/.claude/backlog-runner/usage.json` for the gate to read.
+**No official usage API.** Nothing reports how much usage is left. The only source is the Claude Code statusline, which receives `rate_limits` as JSON. That's why `scripts/statusline_capture.py` exists: it saves that data to `~/.claude/backlog-runner/usage.json` for the gate to read.
 
 ### Local setup (Windows)
 
 | Problem | Fix |
 |---|---|
-| `jq` is "not recognized" | `winget install jqlang.jq`, then open a new terminal. |
-| `bash` not found, even with Git Bash installed | Git Bash isn't on `PATH`. Use the full path in the statusline command, e.g. `"C:\\Program Files\\Git\\bin\\bash.exe" C:/path/to/skills/claude-backlog-runner/scripts/statusline_capture.sh`. |
+| A tool still "not recognized" right after installing it | The open terminal keeps its old `PATH`. **Close that terminal window (and Claude Code), open a new one**, and run `claude --continue` to resume. The setup skill tries a fresh shell first and tells you when a restart is needed. |
+| `python3` is "not recognized" | Windows installs Python as `py`. Use `py -3` (or `python`) instead of `python3`; the setup skill picks the right one for you. |
+| Error mentioning `tzdata` / unknown time zone | Windows Python ships without time-zone data. Run `py -3 -m pip install tzdata` once. |
+| `jq` / `bash` missing for the usage tracker | **Fixed.** The tracker is now a Python script (`statusline_capture.py`); no `jq`, Git Bash or Node needed. |
 | `gh` not installed | `winget install GitHub.cli`, then `gh auth login`. To switch accounts: `gh auth logout`. |
 | `claude` not found | Claude Code isn't installed. Install it, then run `claude` once to log in. |
 | Bash commands from this README fail in PowerShell | The snippets are Bash. Run them in Git Bash, or rewrite them for PowerShell (e.g. `foreach ($r in @(...)) { ... }` instead of `for r in ...; do ... done`, and a backtick instead of `\` for line breaks). |
@@ -246,6 +248,6 @@ Problems hit while building and testing the runner, with the fix or workaround f
 
 ## Development
 ```bash
-python3 -m pytest tests -q && bash tests/test_statusline_capture.sh
+python3 -m pytest tests -q
 ```
-Python stdlib only; the hook needs `jq`.
+Python stdlib only.

@@ -38,3 +38,15 @@ def test_gate_cli_bad_config_is_no_go(tmp_path):
 def test_gate_cli_missing_config_is_no_go(tmp_path):
     d = run("gate", "--usage-file", str(tmp_path / "x.json"), "--config", str(tmp_path / "nope.json"))
     assert d["go"] is False and "bad config" in d["reason"]
+
+
+def test_now_prints_local_time():
+    out = subprocess.run([sys.executable, "-m", "runner", "now", "--tz", "Asia/Kolkata"], cwd=ROOT,
+                         capture_output=True, text=True, check=True).stdout.strip()
+    assert out.endswith(" IST") and len(out) == len("2026-11-20 17:21 IST")
+
+
+def test_unknown_timezone_gives_clear_error():
+    r = subprocess.run([sys.executable, "-m", "runner", "now", "--tz", "Nope/Zone"], cwd=ROOT,
+                       capture_output=True, text=True)
+    assert r.returncode != 0 and "tzdata" in r.stderr
