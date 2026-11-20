@@ -12,8 +12,12 @@ It never merges, never pushes to `main`, never closes issues.
 
 ## Quick start
 
-1. Get the skill: clone this repo (or fork it), e.g. `git clone https://github.com/rohanchoudhary5210/claude-backlog-runner ~/.claude/skills/claude-backlog-runner`.
-2. `cp config.example.json config.json` and fill in your GitHub login, repos, git name/email and `timezone`.
+1. Install the plugin (Claude Code or Cowork): add the marketplace `rohanchoudhary5210/claude-backlog-runner`, then install `backlog-runner`. In Claude Code:
+   ```
+   /plugin marketplace add rohanchoudhary5210/claude-backlog-runner
+   /plugin install backlog-runner@backlog-runner
+   ```
+2. Copy [`config.example.json`](skills/claude-backlog-runner/config.example.json) to a folder of your own (e.g. `~/backlog-runner/config.json`) and fill in your GitHub login, repos, git name/email and `timezone`. Keep it outside the plugin folder: plugin updates replace that folder.
 3. Create the labels and the two issues (below) in your repos.
 4. Schedule a Claude task with the prompt: *Run the claude-backlog-runner skill using config at `<path>/config.json`.*
 5. Optional: add the statusline hook so the runner can see your usage (otherwise 1 task per run).
@@ -41,7 +45,7 @@ Optional: `priority:1`, `priority:2`, … labels — lower runs first.
 Issues opened by anyone other than `owner` only run once you add `approved`, even if labelled `safe`. The runner never touches CI/workflow files.
 
 ### 2. Config
-Copy `config.example.json` → `config.json` (git-ignored) and fill it in:
+Copy [`config.example.json`](skills/claude-backlog-runner/config.example.json) to `config.json` outside the plugin folder and fill it in:
 
 | Key | Meaning |
 |---|---|
@@ -56,13 +60,14 @@ Copy `config.example.json` → `config.json` (git-ignored) and fill it in:
 ### 3. Usage data (statusline hook)
 Add to `~/.claude/settings.json` on the machine where the runs happen:
 ```json
-"statusLine": { "type": "command", "command": "bash /path/to/claude-backlog-runner/scripts/statusline_capture.sh" }
+"statusLine": { "type": "command", "command": "bash /path/to/claude-backlog-runner/skills/claude-backlog-runner/scripts/statusline_capture.sh" }
 ```
 It writes `~/.claude/backlog-runner/usage.json` with a `captured_at` time; data older than `max_age_minutes` (90) is ignored. Without it, each run does at most `fallback_max_tasks` (1) task. Cloud sessions don't expose this data, so cloud runs always use the fallback cap.
 
 ### 4. Install the skill and schedule it
-- **Claude Code (PC):** put this folder at `~/.claude/skills/claude-backlog-runner/`.
-- **Claude app / cloud:** save `SKILL.md` as a skill (if your plan allows), connect GitHub, and make sure your repos are in the session's GitHub access. Where `gh` is blocked, the skill uses the GitHub MCP tools instead.
+- **Plugin (recommended):** add this repo as a plugin marketplace and install `backlog-runner` (see Quick start).
+- **Without plugins:** copy `skills/claude-backlog-runner/` to `~/.claude/skills/claude-backlog-runner/`.
+- **Claude app / cloud:** install the plugin, or save that folder as a skill (if your plan allows), connect GitHub, and make sure your repos are in the session's GitHub access. Where `gh` is blocked, the skill uses the GitHub MCP tools instead.
 
 Then create scheduled tasks at quiet hours with the prompt:
 
@@ -83,7 +88,7 @@ Problems hit while building and testing the runner, with the fix or workaround f
 | Problem | Fix |
 |---|---|
 | `jq` is "not recognized" | `winget install jqlang.jq`, then open a new terminal. |
-| `bash` not found, even with Git Bash installed | Git Bash isn't on `PATH`. Use the full path in the statusline command, e.g. `"C:\\Program Files\\Git\\bin\\bash.exe" C:/path/to/scripts/statusline_capture.sh`. |
+| `bash` not found, even with Git Bash installed | Git Bash isn't on `PATH`. Use the full path in the statusline command, e.g. `"C:\\Program Files\\Git\\bin\\bash.exe" C:/path/to/skills/claude-backlog-runner/scripts/statusline_capture.sh`. |
 | `gh` not installed | `winget install GitHub.cli`, then `gh auth login`. To switch accounts: `gh auth logout`. |
 | `claude` not found | Claude Code isn't installed. Install it, then run `claude` once to log in. |
 | Bash commands from this README fail in PowerShell | The snippets are Bash. Run them in Git Bash, or rewrite them for PowerShell (e.g. `foreach ($r in @(...)) { ... }` instead of `for r in ...; do ... done`, and a backtick instead of `\` for line breaks). |

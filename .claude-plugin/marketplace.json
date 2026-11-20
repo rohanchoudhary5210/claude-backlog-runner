@@ -1,0 +1,16 @@
+{
+  "name": "backlog-runner",
+  "owner": {
+    "name": "Rohan Choudhary"
+  },
+  "metadata": {
+    "description": "Backlog Runner: a skill that works through your GitHub backlog on leftover Claude usage."
+  },
+  "plugins": [
+    {
+      "name": "backlog-runner",
+      "source": "./",
+      "description": "Spend leftover Claude usage on your low-priority GitHub backlog: branches and draft PRs only, within usage floors."
+    }
+  ]
+}
