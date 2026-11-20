@@ -218,6 +218,7 @@ Problems hit while building and testing the runner, with the fix or workaround f
 
 | Problem | Fix |
 |---|---|
+| A tool still "not recognized" right after installing it | The open terminal keeps its old `PATH`. **Close that terminal window (and Claude Code), open a new one**, and run `claude --continue` to resume. The setup skill tries a fresh shell first and tells you when a restart is needed. |
 | `python3` is "not recognized" | Windows installs Python as `py`. Use `py -3` (or `python`) instead of `python3`; the setup skill picks the right one for you. |
 | Error mentioning `tzdata` / unknown time zone | Windows Python ships without time-zone data. Run `py -3 -m pip install tzdata` once. |
 | `jq` / `bash` missing for the usage tracker | **Fixed.** The tracker is now a Python script (`statusline_capture.py`); no `jq`, Git Bash or Node needed. |

@@ -19,6 +19,22 @@ Do the whole setup for the user. They should only answer a few questions; never 
 - Never overwrite an existing `config.json` or `statusLine` setting without asking first.
 - Re-running setup must be safe: skip anything that already exists.
 
+## 0. Missing tools (PC)
+
+Check the tools first: `git --version`, `gh --version`, and the Python command (`python3 --version`, on Windows `py -3 --version`). If one is "not found" / "not recognized":
+
+1. Offer to install it. Windows: `winget install --id Git.Git -e`, `winget install --id GitHub.cli -e`, `winget install --id Python.Python.3.12 -e`. macOS: `brew install git gh python`. Linux: the system package manager.
+2. **A terminal that was already open doesn't see the new tool** — it keeps the old `PATH` — so "not found" can repeat right after a successful install. Don't retry in the same shell, and don't treat it as a failed install.
+   - **Windows:** run the next commands in a fresh shell that loads the updated `PATH`, e.g.
+     `powershell -NoProfile -Command "$env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User'); gh --version"`
+     If that works, keep using this pattern for the rest of setup.
+   - **macOS/Linux:** run `hash -r`, or start a new login shell (`bash -lc "gh --version"`).
+3. If the tool is still not found, it's the app's own environment that's stale. Tell the user plainly:
+   > `<tool>` is installed, but this window started before it was. Close this terminal window (and Claude Code), open a new terminal, and run `claude --continue` to pick up where we left off.
+
+   Then stop. Don't keep retrying in the old window.
+4. After installing `gh`, it needs a login: ask the user to run `gh auth login` in that new terminal (it opens the browser), then continue.
+
 ## 1. Find out what you can
 
 - Login, name and id: `gh api user --jq '{login, name, id}'` (MCP: `get_me`).
