@@ -37,7 +37,7 @@ Claude then asks which repos to use, your timezone and when you're usually away,
 - schedules the runs;
 - optionally creates a test task and runs it once.
 
-Running it again is safe: it skips anything that already exists. After that, add tasks as described in [Day-to-day use](#day-to-day-use).
+Running it again is safe: it skips anything that already exists. After that, add tasks by just telling Claude, e.g. *"Add to backlog: fix the typo on the login page"* (see [Day-to-day use](#day-to-day-use)).
 
 Prefer to do it by hand, or want to know what each part does? The manual steps are below.
 
@@ -152,7 +152,7 @@ Without this step, the runner still works, but does at most `fallback_max_tasks`
    ```
    ~/.claude/plugins/cache/backlog-runner/backlog-runner/<version>/skills/claude-backlog-runner/scripts/statusline_capture.sh
    ```
-   (`<version>` is e.g. `1.1.0`; it changes when the plugin updates, so redo this step after an update.)
+   (`<version>` is e.g. `1.2.0`; it changes when the plugin updates, so redo this step after an update.)
 2. Add this to `~/.claude/settings.json`, with the full path from above:
    ```json
    "statusLine": { "type": "command", "command": "bash /full/path/to/statusline_capture.sh" }
@@ -189,7 +189,11 @@ If nothing happens, the summary on `runner-log` says why. Also see [Troubleshoot
 
 ## Day-to-day use
 
-- **Add a task:** open an issue, label it `backlog` plus `safe` (just do it) or `ask-first` (wait for my OK). Write it like a ticket for a colleague: what to change and how to tell it's done.
+- **Add a task, the easy way:** just tell Claude, in your own words. One task or a whole list:
+  > Add to backlog: fix the typo on the login screen in my app, and research free icon libraries for Godot.
+
+  Claude picks the right repo, writes a clear issue (what to do + how to tell it's done), sets `safe` or `ask-first` depending on how risky it is, shows you a one-line preview and creates them. It also skips tasks that are already in the backlog.
+- **Add a task by hand:** open an issue, label it `backlog` plus `safe` (just do it) or `ask-first` (wait for my OK). Write it like a ticket for a colleague: what to change and how to tell it's done.
 - **Approve `ask-first` tasks:** add `approved` to the issue, or comment `tonight: go` on the `tonight` issue to allow all of them for one night.
 - **Review the results:** check the draft PRs. The runner never merges, never pushes to `main` and never closes issues; merging is always your call.
 - **Stop for a while:** remove the scheduled task, or remove the `backlog` label from issues you want left alone.
