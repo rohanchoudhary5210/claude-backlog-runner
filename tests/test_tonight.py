@@ -37,3 +37,9 @@ def test_afternoon_run_needs_same_day_evening_comment():
 def test_body_must_start_with_phrase():
     cs = [c("rohan", "not tonight: go", 2026, 11, 20, 23)]
     assert not tonight_on(cs, "rohan", ts(2026, 11, 21, 3))
+
+
+def test_timezone_moves_the_evening_cutoff():
+    # 23:00 IST on Nov 20 is 12:30 New York time: before New York's 18:00 cutoff.
+    cs = [c("rohan", "tonight: go", 2026, 11, 20, 23)]
+    assert not tonight_on(cs, "rohan", ts(2026, 11, 21, 3), tz="America/New_York")
