@@ -1,7 +1,7 @@
 """CLI used by SKILL.md:
   python -m runner gate --usage-file PATH [--config PATH]
   python -m runner pick --issues PATH --limit N [--tonight] [--owner LOGIN]
-  python -m runner tonight --comments PATH --owner LOGIN
+  python -m runner tonight --comments PATH --owner LOGIN [--tz IANA_ZONE]
 """
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ import sys
 import time
 
 from .tasks import select_tasks
-from .tonight import tonight_on
+from .tonight import DEFAULT_TZ, tonight_on
 from .usage import DEFAULTS, gate, load_usage, validate_config
 
 DEFAULT_USAGE_FILE = os.path.expanduser("~/.claude/backlog-runner/usage.json")
@@ -39,6 +39,7 @@ def main(argv=None) -> int:
     t = sub.add_parser("tonight")
     t.add_argument("--comments", required=True)
     t.add_argument("--owner", required=True)
+    t.add_argument("--tz", default=DEFAULT_TZ)
     a = p.parse_args(argv)
     now = int(time.time())
 
@@ -64,7 +65,7 @@ def main(argv=None) -> int:
         with open(a.comments) as f:
             data = json.load(f)
         comments = data.get("comments", []) if isinstance(data, dict) else data
-        print(json.dumps({"tonight": tonight_on(comments, a.owner, now)}))
+        print(json.dumps({"tonight": tonight_on(comments, a.owner, now, a.tz)}))
     return 0
 
 
