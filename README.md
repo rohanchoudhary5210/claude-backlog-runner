@@ -17,7 +17,31 @@ It never merges, never pushes to `main`, never closes issues.
 - **On a PC (Claude Code):** `git`, Python 3.9+, and the [`gh` CLI](https://cli.github.com) logged in (`gh auth login`). For usage tracking, also `jq` and `bash` (Git Bash on Windows). Windows users: see [Local setup (Windows)](#local-setup-windows) if a command isn't found.
 - **In Cowork (cloud):** GitHub connected to Claude, with your repos included in its access. Nothing to install.
 
-## Setup, step by step
+## Easy setup (2 steps, ~5 minutes)
+
+Claude does the setup for you. You only answer 2–3 questions.
+
+**1. Install the plugin.** In Claude Code, run:
+```
+/plugin marketplace add rohanchoudhary5210/claude-backlog-runner
+/plugin install backlog-runner@backlog-runner
+```
+In Cowork: add the marketplace `rohanchoudhary5210/claude-backlog-runner` in the plugin settings and install **backlog-runner**.
+
+**2. Say: "Set up the backlog runner."**
+
+Claude then asks which repos to use, your timezone and when you're usually away, and does the rest:
+- creates a private `backlog-notes` repo, the labels, and the `tonight` and `runner-log` issues;
+- writes your config;
+- on a PC, turns on usage tracking (the statusline);
+- schedules the runs;
+- optionally creates a test task and runs it once.
+
+Running it again is safe: it skips anything that already exists. After that, add tasks as described in [Day-to-day use](#day-to-day-use).
+
+Prefer to do it by hand, or want to know what each part does? The manual steps are below.
+
+## Manual setup, step by step
 
 Setup takes about 15 minutes. You do steps 1–3 once, step 4 only on a PC, and step 5 to start the runs. Step 6 checks that everything works.
 
@@ -128,7 +152,7 @@ Without this step, the runner still works, but does at most `fallback_max_tasks`
    ```
    ~/.claude/plugins/cache/backlog-runner/backlog-runner/<version>/skills/claude-backlog-runner/scripts/statusline_capture.sh
    ```
-   (`<version>` is e.g. `1.0.0`; it changes when the plugin updates, so redo this step after an update.)
+   (`<version>` is e.g. `1.1.0`; it changes when the plugin updates, so redo this step after an update.)
 2. Add this to `~/.claude/settings.json`, with the full path from above:
    ```json
    "statusLine": { "type": "command", "command": "bash /full/path/to/statusline_capture.sh" }
