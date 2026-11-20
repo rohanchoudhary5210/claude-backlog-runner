@@ -11,7 +11,7 @@ if [ -z "$rl" ] || [ "$rl" = "{}" ]; then
 fi
 
 mkdir -p "$(dirname "$file")"
-printf '%s\n' "$rl" > "$file.tmp" && mv "$file.tmp" "$file"
+printf '%s' "$rl" | jq -c --argjson t "$(date +%s)" '. + {captured_at: $t}' > "$file.tmp" && mv "$file.tmp" "$file"
 
 five=$(printf '%s' "$rl" | jq -r '.five_hour.used_percentage // empty | floor')
 seven=$(printf '%s' "$rl" | jq -r '.seven_day.used_percentage // empty | floor')

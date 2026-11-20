@@ -26,3 +26,15 @@ def test_pick_cli_outputs_selection(tmp_path):
     f.write_text(json.dumps(issues))
     out = run("pick", "--issues", str(f), "--limit", "3")
     assert [i["number"] for i in out] == [1]
+
+
+def test_gate_cli_bad_config_is_no_go(tmp_path):
+    cfg = tmp_path / "c.json"
+    cfg.write_text('{"weekly_floor": "80"}')
+    d = run("gate", "--usage-file", str(tmp_path / "x.json"), "--config", str(cfg))
+    assert d["go"] is False and "bad config" in d["reason"]
+
+
+def test_gate_cli_missing_config_is_no_go(tmp_path):
+    d = run("gate", "--usage-file", str(tmp_path / "x.json"), "--config", str(tmp_path / "nope.json"))
+    assert d["go"] is False and "bad config" in d["reason"]

@@ -1,6 +1,6 @@
 import json
 
-from runner.usage import DEFAULTS, Decision, gate, load_usage
+from runner.usage import DEFAULTS, gate, load_usage, validate_config
 
 NOW = 1_800_000_000
 DAY = 86400
@@ -12,8 +12,8 @@ def write(tmp_path, data):
     return str(p)
 
 
-def rl(five=None, seven=None):
-    d = {}
+def rl(five=None, seven=None, captured_at=NOW):
+    d = {} if captured_at is None else {"captured_at": captured_at}
     if five:
         d["five_hour"] = {"used_percentage": five[0], "resets_at": five[1]}
     if seven:
@@ -73,6 +73,29 @@ def test_gate_five_hour_floor_stops(tmp_path):
     assert not d.go and "5-hour" in d.reason
 
 
-def test_gate_missing_one_window_checks_the_other(tmp_path):
+def test_gate_missing_five_hour_window_is_fallback(tmp_path):
     d = gate(load(tmp_path, seven=(50, NOW + 3 * DAY)), DEFAULTS, NOW)
-    assert d == Decision(go=True, fallback=False, reason=d.reason) and d.go
+    assert d.go and d.fallback
+
+
+def test_load_old_capture_returns_none(tmp_path):
+    data = rl(five=(10, NOW + 3600), seven=(10, NOW + 3 * DAY), captured_at=NOW - 3 * 3600)
+    assert load_usage(write(tmp_path, data), NOW) is None
+
+
+def test_load_missing_captured_at_returns_none(tmp_path):
+    data = rl(five=(10, NOW + 3600), seven=(10, NOW + 3 * DAY), captured_at=None)
+    assert load_usage(write(tmp_path, data), NOW) is None
+
+
+def test_load_nan_or_out_of_range_window_dropped(tmp_path):
+    p = write(tmp_path, '{"captured_at": %d, "five_hour": {"used_percentage": NaN, "resets_at": %d},'
+                        ' "seven_day": {"used_percentage": 150, "resets_at": %d}}' % (NOW, NOW + 3600, NOW + DAY))
+    assert load_usage(p, NOW) is None
+
+
+def test_validate_config_rejects_bad_values():
+    assert validate_config({"weekly_floor": "80"})
+    assert validate_config({"weekly_floor": 800})
+    assert validate_config({"max_tasks": -1})
+    assert validate_config(DEFAULTS) == []

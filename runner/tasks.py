@@ -25,8 +25,21 @@ def _eligible(labels: set[str], tonight: bool) -> bool:
     return "safe" in labels
 
 
-def select_tasks(issues: list[dict], tonight: bool, limit: int) -> list[dict]:
-    picked = [i for i in issues if _eligible(_labels(i), tonight)]
+def _author(issue: dict) -> str:
+    a = issue.get("author") or {}
+    return (a.get("login") or "").lower()
+
+
+def select_tasks(issues: list[dict], tonight: bool, limit: int, owner: str | None = None) -> list[dict]:
+    """If `owner` is given, issues opened by anyone else run only with `approved`."""
+    picked = []
+    for i in issues:
+        labels = _labels(i)
+        if not _eligible(labels, tonight):
+            continue
+        if owner and _author(i) != owner.lower() and "approved" not in labels:
+            continue
+        picked.append(i)
 
     def key(i):
         p = _priority(_labels(i))

@@ -1,6 +1,7 @@
 """CLI used by SKILL.md:
   python -m runner gate --usage-file PATH [--config PATH]
-  python -m runner pick --issues PATH --limit N [--tonight]
+  python -m runner pick --issues PATH --limit N [--tonight] [--owner LOGIN]
+  python -m runner tonight --comments PATH --owner LOGIN
 """
 from __future__ import annotations
 
@@ -11,7 +12,8 @@ import sys
 import time
 
 from .tasks import select_tasks
-from .usage import DEFAULTS, gate, load_usage
+from .tonight import tonight_on
+from .usage import DEFAULTS, gate, load_usage, validate_config
 
 DEFAULT_USAGE_FILE = os.path.expanduser("~/.claude/backlog-runner/usage.json")
 
@@ -33,17 +35,36 @@ def main(argv=None) -> int:
     k.add_argument("--issues", required=True)
     k.add_argument("--limit", type=int, required=True)
     k.add_argument("--tonight", action="store_true")
+    k.add_argument("--owner")
+    t = sub.add_parser("tonight")
+    t.add_argument("--comments", required=True)
+    t.add_argument("--owner", required=True)
     a = p.parse_args(argv)
+    now = int(time.time())
 
     if a.cmd == "gate":
-        cfg = {**DEFAULTS, **_config(a.config)}
-        d = gate(load_usage(a.usage_file, int(time.time())), cfg, int(time.time()))
+        try:
+            user = _config(a.config)
+            errs = validate_config(user) if isinstance(user, dict) else ["config must be a JSON object"]
+        except (OSError, ValueError) as e:
+            errs = [str(e)]
+        if errs:
+            print(json.dumps({"go": False, "fallback": False, "max_tasks": 0,
+                              "reason": "bad config: " + "; ".join(errs)}))
+            return 0
+        cfg = {**DEFAULTS, **user}
+        d = gate(load_usage(a.usage_file, now, cfg["max_age_minutes"]), cfg, now)
         cap = cfg["fallback_max_tasks"] if d.fallback else cfg["max_tasks"]
         print(json.dumps({"go": d.go, "fallback": d.fallback, "reason": d.reason, "max_tasks": cap}))
-    else:
+    elif a.cmd == "pick":
         with open(a.issues) as f:
             issues = json.load(f)
-        print(json.dumps(select_tasks(issues, a.tonight, a.limit), indent=2))
+        print(json.dumps(select_tasks(issues, a.tonight, a.limit, a.owner), indent=2))
+    elif a.cmd == "tonight":
+        with open(a.comments) as f:
+            data = json.load(f)
+        comments = data.get("comments", []) if isinstance(data, dict) else data
+        print(json.dumps({"tonight": tonight_on(comments, a.owner, now)}))
     return 0
 
 

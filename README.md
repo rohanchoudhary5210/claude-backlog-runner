@@ -28,6 +28,8 @@ gh issue create -R rohanchoudhary5210/backlog-notes -t runner-log -b "Run summar
 ```
 Optional: `priority:1`, `priority:2`, … labels — lower runs first.
 
+Issues opened by anyone other than `owner` only run once you add `approved`, even if labelled `safe`. The runner never touches CI/workflow files.
+
 ### 2. Config
 Copy `config.example.json` → `config.json` and list your repos. Floors are "stop at": 7-day 80% (95% within 24 h of the weekly reset), 5-hour 85%.
 
@@ -36,7 +38,7 @@ Add to `~/.claude/settings.json` where the runs happen:
 ```json
 "statusLine": { "type": "command", "command": "bash /path/to/claude-backlog-runner/scripts/statusline_capture.sh" }
 ```
-It writes `~/.claude/backlog-runner/usage.json`. Without it, each run does at most `fallback_max_tasks` (1) task.
+It writes `~/.claude/backlog-runner/usage.json` with a `captured_at` time; data older than `max_age_minutes` (90) is ignored. Without it, each run does at most `fallback_max_tasks` (1) task.
 
 **First thing to check:** in a cloud session, run one prompt then `cat ~/.claude/backlog-runner/usage.json`. If it's missing, cloud sessions don't expose usage yet and the runner stays on the fallback cap.
 

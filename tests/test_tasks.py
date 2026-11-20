@@ -1,8 +1,8 @@
 from runner.tasks import select_tasks
 
 
-def issue(n, *labels, created="2026-11-01T00:00:00Z"):
-    return {"number": n, "title": f"t{n}", "url": f"u{n}", "repo": "r/r",
+def issue(n, *labels, created="2026-11-01T00:00:00Z", author="rohan"):
+    return {"number": n, "title": f"t{n}", "url": f"u{n}", "repo": "r/r", "author": {"login": author},
             "createdAt": created, "labels": [{"name": l} for l in labels]}
 
 
@@ -49,3 +49,18 @@ def test_priority_then_oldest_order():
 def test_limit_respected():
     xs = [issue(i, "backlog", "safe") for i in range(5)]
     assert len(select_tasks(xs, False, 2)) == 2
+
+
+def test_non_owner_safe_issue_needs_approval():
+    xs = [issue(1, "backlog", "safe", author="stranger")]
+    assert select_tasks(xs, False, 3, owner="rohan") == []
+    assert select_tasks(xs, True, 3, owner="rohan") == []
+
+
+def test_non_owner_issue_runs_when_approved():
+    xs = [issue(1, "backlog", "safe", "approved", author="stranger")]
+    assert nums(select_tasks(xs, False, 3, owner="rohan")) == [1]
+
+
+def test_owner_check_case_insensitive():
+    assert nums(select_tasks([issue(1, "backlog", "safe", author="Rohan")], False, 3, owner="rohan")) == [1]

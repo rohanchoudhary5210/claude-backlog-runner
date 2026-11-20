@@ -1,4 +1,5 @@
 {
+  "owner": "rohanchoudhary5210",
   "repos": ["rohanchoudhary5210/Piasa-Dekh"],
   "notes_repo": "rohanchoudhary5210/backlog-notes",
   "log_repo": "rohanchoudhary5210/backlog-notes",
@@ -9,5 +10,6 @@
   "near_reset_hours": 24,
   "five_hour_floor": 85,
   "max_tasks": 3,
-  "fallback_max_tasks": 1
+  "fallback_max_tasks": 1,
+  "max_age_minutes": 90
 }
