@@ -27,7 +27,7 @@ Sort the issues into:
 
 Last run: the newest entry on the `runner-log` issue in `log_repo` — its latest comment, or the top of the issue body if summaries are written there. Note its time and its usage line.
 
-Usage (PC only, optional): if `~/.claude/backlog-runner/usage.json` exists, run the gate from the `claude-backlog-runner` skill folder: `python3 -m runner gate --config <config>`, and report its `reason`.
+Usage (PC only, optional): if `~/.claude/backlog-runner/usage.json` exists, run the gate from the `claude-backlog-runner` skill folder: `python3 -m runner gate --config <config>` (`py -3` on Windows), and report its `reason`.
 
 ## 3. Report
 

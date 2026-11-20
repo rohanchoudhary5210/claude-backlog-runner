@@ -10,6 +10,8 @@ import json
 import os
 import sys
 import time
+from datetime import datetime
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .tasks import select_tasks
 from .tonight import DEFAULT_TZ, tonight_on
@@ -40,6 +42,8 @@ def main(argv=None) -> int:
     t.add_argument("--comments", required=True)
     t.add_argument("--owner", required=True)
     t.add_argument("--tz", default=DEFAULT_TZ)
+    n = sub.add_parser("now")  # local time for summaries; no `date`/TZ tricks needed on Windows
+    n.add_argument("--tz", default=DEFAULT_TZ)
     a = p.parse_args(argv)
     now = int(time.time())
 
@@ -66,8 +70,14 @@ def main(argv=None) -> int:
             data = json.load(f)
         comments = data.get("comments", []) if isinstance(data, dict) else data
         print(json.dumps({"tonight": tonight_on(comments, a.owner, now, a.tz)}))
+    elif a.cmd == "now":
+        print(datetime.fromtimestamp(now, ZoneInfo(a.tz)).strftime("%Y-%m-%d %H:%M %Z"))
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except ZoneInfoNotFoundError as e:
+        # Windows Python ships without time-zone data.
+        sys.exit(f"unknown time zone {e}: check `timezone` in the config, and on Windows run `py -3 -m pip install tzdata`")
