@@ -152,7 +152,7 @@ Without this step, the runner still works, but does at most `fallback_max_tasks`
    ```
    ~/.claude/plugins/cache/backlog-runner/backlog-runner/<version>/skills/claude-backlog-runner/scripts/statusline_capture.sh
    ```
-   (`<version>` is e.g. `1.2.0`; it changes when the plugin updates, so redo this step after an update.)
+   (`<version>` is e.g. `1.3.0`; it changes when the plugin updates, so redo this step after an update.)
 2. Add this to `~/.claude/settings.json`, with the full path from above:
    ```json
    "statusLine": { "type": "command", "command": "bash /full/path/to/statusline_capture.sh" }
@@ -189,14 +189,20 @@ If nothing happens, the summary on `runner-log` says why. Also see [Troubleshoot
 
 ## Day-to-day use
 
-- **Add a task, the easy way:** just tell Claude, in your own words. One task or a whole list:
-  > Add to backlog: fix the typo on the login screen in my app, and research free icon libraries for Godot.
+You don't need to open GitHub for the usual things. Tell Claude in your own words:
 
-  Claude picks the right repo, writes a clear issue (what to do + how to tell it's done), sets `safe` or `ask-first` depending on how risky it is, shows you a one-line preview and creates them. It also skips tasks that are already in the backlog.
-- **Add a task by hand:** open an issue, label it `backlog` plus `safe` (just do it) or `ask-first` (wait for my OK). Write it like a ticket for a colleague: what to change and how to tell it's done.
-- **Approve `ask-first` tasks:** add `approved` to the issue, or comment `tonight: go` on the `tonight` issue to allow all of them for one night.
+| You say (for example) | What happens | Skill |
+|---|---|---|
+| *"Add to backlog: fix the typo on the login screen, and research free icon libraries for Godot."* | Picks the right repo, writes a clear issue for each task (what to do + how to tell it's done), sets `safe` or `ask-first` by risk, shows a one-line preview, then creates them. Skips tasks already in the backlog. | `backlog-add` |
+| *"What's the backlog status?"* | Read-only summary: queued tasks, tasks waiting for your OK, failed ones, draft PRs to review, and what the last run did. | `backlog-status` |
+| *"Approve the waiting tasks"* / *"Let them run tonight"* | Lists the `ask-first` tasks and adds `approved` to the ones you pick, or comments `tonight: go` (after 18:00) to allow all of them for one night. | `backlog-approve` |
+| *"Which repos does the runner use?"* / *"Add my notes-app repo"* / *"Remove old-site from the runner"* | Lists repos with task counts, adds a repo (and its labels) to your config, or takes one out of the config. Never deletes anything on GitHub. | `backlog-repos` |
+
+Still your job:
 - **Review the results:** check the draft PRs. The runner never merges, never pushes to `main` and never closes issues; merging is always your call.
 - **Stop for a while:** remove the scheduled task, or remove the `backlog` label from issues you want left alone.
+
+Prefer GitHub? Open an issue, label it `backlog` plus `safe` (just do it) or `ask-first` (wait for my OK), and approve with the `approved` label.
 
 ## Troubleshooting and known limitations
 
