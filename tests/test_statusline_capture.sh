@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Tests for scripts/statusline_capture.sh
 set -u
-here="$(cd "$(dirname "$0")/.." && pwd)"
+here="$(cd "$(dirname "$0")/../skills/claude-backlog-runner" && pwd)"
 tmp="$(mktemp -d)"
 fail=0
 

@@ -1,0 +1,8 @@
+{
+  "name": "backlog-runner",
+  "description": "Spend leftover Claude usage on your low-priority GitHub backlog: branches and draft PRs only, within usage floors.",
+  "version": "1.0.0",
+  "author": { "name": "Rohan Choudhary" },
+  "repository": "https://github.com/rohanchoudhary5210/claude-backlog-runner",
+  "license": "MIT"
+}
