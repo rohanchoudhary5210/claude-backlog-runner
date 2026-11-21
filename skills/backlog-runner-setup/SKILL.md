@@ -69,6 +69,10 @@ In `backlog-notes` and each chosen repo, create these labels. "Already exists" (
 | `approved` | `1d76db` | Approved for the runner |
 | `runner:done` | `c2e0c6` | Runner finished (see PR) |
 | `runner:failed` | `e99695` | Runner couldn't do it |
+| `template:tests` | `bfdadc` | Runner: add missing tests |
+| `template:docs` | `bfdadc` | Runner: bring docs up to date |
+| `template:deadcode` | `bfdadc` | Runner: remove unused code |
+| `template:lint` | `bfdadc` | Runner: fix lint/formatting |
 
 `gh api repos/<repo>/labels -f name=<name> -f color=<color> -f description="<description>"`
 

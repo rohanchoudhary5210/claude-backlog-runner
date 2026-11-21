@@ -87,6 +87,7 @@ The runner takes its to-do list from GitHub issues. Labels tell it which issues 
 | `runner:done` | Runner | Finished; the issue links to a draft PR. |
 | `runner:failed` | Runner | Couldn't do it; the reason is in the run summary. |
 | `priority:1`, `priority:2`, … | You (optional) | Lower number runs first. |
+| `template:tests`, `template:docs`, `template:deadcode`, `template:lint` | You (optional) | Use a ready-made task recipe (see [Templates](#templates)); the issue body only needs the scope. |
 
 With the `gh` CLI, this creates all of them (replace `<owner>` and `<code-repo>`, and list as many repos as you need):
 ```bash
@@ -97,6 +98,9 @@ for r in <owner>/backlog-notes <owner>/<code-repo>; do
   gh label create approved      -R $r -c 1d76db -d "Approved for the runner" -f
   gh label create runner:done   -R $r -c c2e0c6 -d "Runner finished (see PR)" -f
   gh label create runner:failed -R $r -c e99695 -d "Runner couldn't do it" -f
+  for t in tests docs deadcode lint; do
+    gh label create template:$t -R $r -c bfdadc -d "Runner template: $t" -f
+  done
 done
 ```
 No `gh`? Create them on GitHub: repo → **Issues** → **Labels** → **New label**. The names must match exactly; colours don't matter.
@@ -212,6 +216,29 @@ Still your job:
 - **Stop for a while:** remove the scheduled task, or remove the `backlog` label from issues you want left alone.
 
 Prefer GitHub? Open an issue, label it `backlog` plus `safe` (just do it) or `ask-first` (wait for my OK), and approve with the `approved` label.
+
+### Templates
+
+Add a `template:<name>` label and the runner follows a ready-made recipe (in `skills/claude-backlog-runner/templates/`). The issue body only needs the scope, e.g. *"src/payments"*:
+
+| Label | Recipe |
+|---|---|
+| `template:tests` | Add missing tests for current behaviour (no production changes; up to ~10 tests). |
+| `template:docs` | Make the docs match the code; lists every change and why. |
+| `template:deadcode` | Remove code nothing uses; lists "maybe unused" items it left alone. |
+| `template:lint` | Fix lint/formatting with the repo's own tools, no logic changes. |
+
+### Dry run (preview)
+
+Say *"Run the claude-backlog-runner skill — dry run"* (or set `"dry_run": true` in the config). The run checks usage and picks tasks as usual but changes nothing: no branches, PRs, labels or comments. You get a "would do / would skip" list instead. Handy before adding a new repo.
+
+### Time limit per task
+
+Each task gets `task_timeout_minutes` (default 30). If it runs over, the runner stops that task without pushing half-done work, marks it `runner:failed` and asks you to split it.
+
+### Weekly history
+
+Every run summary on `runner-log` ends with a line like *"This week: 9 runs · 14 done · 1 failed · ~12% of weekly usage put to work"*. It's computed from a hidden stats line in each summary, so nothing extra is stored. The usage % is only counted for runs that could see usage data (PC with the statusline); cloud runs count as runs and tasks only.
 
 ## Updating
 
