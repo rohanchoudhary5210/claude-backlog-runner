@@ -1,11 +1,14 @@
 {
   "owner": "your-github-login",
-  "repos": ["your-github-login/your-code-repo"],
+  "repos": [
+    "your-github-login/your-code-repo"
+  ],
   "notes_repo": "your-github-login/backlog-notes",
   "log_repo": "your-github-login/backlog-notes",
   "git_name": "Your Name",
   "git_email": "your-github-login@users.noreply.github.com",
   "timezone": "Asia/Kolkata",
+  "utc_offset": "+05:30",
   "weekly_floor": 80,
   "weekly_floor_near_reset": 95,
   "near_reset_hours": 24,

@@ -14,7 +14,7 @@ It never merges, never pushes to `main`, never closes issues.
 
 - A **Claude plan** with Claude Code and/or Cowork. The runner spends *your* leftover usage, so it runs on your own account.
 - A **GitHub account** with the repos you want the runner to work in.
-- **On a PC (Claude Code):** `git`, Python 3.9+, and the [`gh` CLI](https://cli.github.com) logged in (`gh auth login`). On Windows, Python is usually run as `py -3`: use that wherever this README says `python3`. Windows users: see [Local setup (Windows)](#local-setup-windows) if a command isn't found.
+- **On a PC (Claude Code):** `git`, [`jq`](https://jqlang.org/download/) 1.6+, and the [`gh` CLI](https://cli.github.com) logged in (`gh auth login`). No Python. Windows users: see [Local setup (Windows)](#local-setup-windows) if a command isn't found.
 - **In Cowork (cloud):** GitHub connected to Claude, with your repos included in its access. Nothing to install.
 
 ## Easy setup (2 steps, ~5 minutes)
@@ -116,7 +116,7 @@ gh issue create -R <owner>/backlog-notes -t runner-log -b "Run summaries."
 
 ### Step 3: Write your config
 
-Copy [`config.example.json`](skills/claude-backlog-runner/config.example.json) to a folder of your own, for example `~/backlog-runner/config.json`. **Don't keep it inside the plugin folder:** plugin updates replace that folder, and your config would be lost.
+Copy [`config.example.json`](plugin/skills/claude-backlog-runner/config.example.json) to a folder of your own, for example `~/backlog-runner/config.json`. **Don't keep it inside the plugin folder:** plugin updates replace that folder, and your config would be lost.
 
 Then fill it in:
 ```json
@@ -128,13 +128,16 @@ Then fill it in:
   "git_name": "Your Name",
   "git_email": "your-github-login@users.noreply.github.com",
   "timezone": "Asia/Kolkata",
+  "utc_offset": "+05:30",
   "weekly_floor": 80,
   "weekly_floor_near_reset": 95,
   "near_reset_hours": 24,
   "five_hour_floor": 85,
   "max_tasks": 3,
   "fallback_max_tasks": 1,
-  "max_age_minutes": 90
+  "max_age_minutes": 90,
+  "task_timeout_minutes": 30,
+  "dry_run": false
 }
 ```
 
@@ -145,33 +148,33 @@ Then fill it in:
 | `notes_repo` | The repo for research/writing tasks (usually `backlog-notes`). |
 | `log_repo` | The repo with the `tonight` and `runner-log` issues (usually also `backlog-notes`). |
 | `git_name`, `git_email` | The author of the runner's commits. Use your own name; the `…@users.noreply.github.com` email keeps your real email private. |
-| `timezone` | Your [IANA timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), e.g. `Asia/Kolkata`, `Europe/London`. Used for summary times and the `tonight` window. |
+| `timezone` | Your [IANA timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), e.g. `Asia/Kolkata`, `Europe/London`. Used when scheduling runs. |
+| `utc_offset` | Your offset from UTC, e.g. `+05:30` (India), `+00:00` (London in winter). Used for summary times and the `tonight` window. If your clocks change for daylight saving, update it then (or re-run setup). |
 | `weekly_floor` | Stop when your 7-day usage reaches this %. At 80, you always keep 20% for yourself. |
 | `weekly_floor_near_reset`, `near_reset_hours` | Within 24 h of the weekly reset, the runner may go up to 95%, since that usage would expire anyway. |
 | `five_hour_floor` | Stop when your 5-hour usage reaches this %, so you're never locked out right when you sit down to work. |
 | `max_tasks` | Most tasks per run when usage data is available. |
 | `fallback_max_tasks` | Most tasks per run when there's no usage data (always the case in Cowork). Keep it small. |
 | `max_age_minutes` | Usage data older than this is treated as missing. |
+| `task_timeout_minutes` | Time limit per task (see [Time limit per task](#time-limit-per-task)). |
+| `dry_run` | `true` = preview only, change nothing (see [Dry run](#dry-run-preview)). |
 
 You can leave the numbers as they are.
 
 ### Step 4 (PC only, optional): Let the runner see your usage
 
-Claude has no API that reports how much usage is left. Only Claude Code's **statusline** gets these numbers, so the plugin includes a small script that saves them to `~/.claude/backlog-runner/usage.json`. Before each task, the runner reads that file and stops if you're above a floor.
+Claude has no API that reports how much usage is left. Only Claude Code's **statusline** gets these numbers, so the runner skill includes a tiny `jq` program (`status`, in the "Programs" section of [its SKILL.md](plugin/skills/claude-backlog-runner/SKILL.md)) that shows them and saves them to `~/.claude/backlog-runner/usage.json`. Before each task, the runner reads that file and stops if you're above a floor.
 
 Without this step, the runner still works, but does at most `fallback_max_tasks` per run. Cowork never has this data, so skip this step for cloud-only use.
 
-1. Find the script. After a plugin install it's at:
-   ```
-   ~/.claude/plugins/cache/backlog-runner/backlog-runner/<version>/skills/claude-backlog-runner/scripts/statusline_capture.py
-   ```
-   (`<version>` is e.g. `1.4.0`; it changes when the plugin updates, so redo this step after an update.)
-2. Add this to `~/.claude/settings.json`, with the full path from above:
+The easy way is *"Set up the backlog runner"*. By hand:
+1. Copy the `status` program from that SKILL.md into `~/.claude/backlog-runner/jq/status.jq`.
+2. Add this to `~/.claude/settings.json` (full paths, forward slashes, also on Windows):
    ```json
-   "statusLine": { "type": "command", "command": "python3 \"/full/path/to/statusline_capture.py\"" }
+   "statusLine": { "type": "command", "command": "jq -r -f \"C:/Users/<you>/.claude/backlog-runner/jq/status.jq\" 2> \"C:/Users/<you>/.claude/backlog-runner/usage.json\"" }
    ```
-   On Windows, use `py -3` and forward slashes: `"py -3 \"C:/Users/<you>/.claude/plugins/cache/…/statusline_capture.py\""`. It's plain Python, so no `bash` or `jq` is needed.
-3. Restart Claude Code and send any message. The statusline should show something like `5h 12% · 7d 40%`, and `~/.claude/backlog-runner/usage.json` should exist. If it shows `usage n/a`, your plan doesn't send usage data to the statusline yet.
+   The program prints the usage line and writes the numbers to its error output, which `2>` saves to the file.
+3. Restart Claude Code and send any message. The statusline should show something like `5h 12% · 7d 40%`, and `usage.json` should hold plain JSON. If it starts with `jq.exe :` instead (Windows PowerShell rewrites error output), wrap the command: `cmd /c "jq -r -f <path>/status.jq 2> <path>/usage.json"`. If it shows `usage n/a`, Claude Code hasn't sent usage data yet; send another message.
 
 ### Step 5: Schedule the runs
 
@@ -181,7 +184,7 @@ The runner only works when a Claude session starts it, so you schedule sessions 
 1. Create a new scheduled task.
 2. Pick when it runs, e.g. daily at 13:00 and 02:00.
 3. Use this prompt. A cloud session can't read files on your PC, so the config goes inside the prompt:
-   > Write this JSON to `/tmp/config.json`: `{ …paste your whole config.json here… }`. Then run the claude-backlog-runner skill with `CONFIG=/tmp/config.json`.
+   > Write this JSON to `~/backlog-runner/config.json`: `{ …paste your whole config.json here… }`. Then run the claude-backlog-runner skill.
 4. Make sure the task's GitHub access includes every repo in your config.
 
 **Claude Code (PC must be on):**
@@ -219,7 +222,7 @@ Prefer GitHub? Open an issue, label it `backlog` plus `safe` (just do it) or `as
 
 ### Templates
 
-Add a `template:<name>` label and the runner follows a ready-made recipe (in `skills/claude-backlog-runner/templates/`). The issue body only needs the scope, e.g. *"src/payments"*:
+Add a `template:<name>` label and the runner follows a ready-made recipe (in `plugin/skills/claude-backlog-runner/templates/`). The issue body only needs the scope, e.g. *"src/payments"*:
 
 | Label | Recipe |
 |---|---|
@@ -247,7 +250,9 @@ New versions come through the plugin marketplace. In Claude Code:
 /plugin marketplace update backlog-runner
 /plugin install backlog-runner@backlog-runner
 ```
-Your config (kept outside the plugin folder) isn't touched. On a PC with usage tracking, run *"Set up the backlog runner"* again afterwards: the statusline path contains the plugin version, and setup fixes it without redoing anything else.
+Your config and the statusline program live outside the plugin folder, so updates don't touch them. Run *"Set up the backlog runner"* again after an update to refresh the statusline program; it skips everything else that's already there.
+
+**Coming from 1.x (Python)?** 2.0 needs `jq` instead of Python. Install `jq`, add `"utc_offset"` to your config (e.g. `"+05:30"`), and re-run setup to switch the statusline to the `jq` version.
 
 ## Troubleshooting and known limitations
 
@@ -257,16 +262,17 @@ Problems hit while building and testing the runner, with the fix or workaround f
 
 **Personal use only.** Pooling several people's leftover Claude usage on one shared platform breaks Anthropic's terms: sharing a subscription or using it through a third-party app can get an account banned. So the runner only spends *your own* usage, from *your own* account.
 
-**No official usage API.** Nothing reports how much usage is left. The only source is the Claude Code statusline, which receives `rate_limits` as JSON. That's why `scripts/statusline_capture.py` exists: it saves that data to `~/.claude/backlog-runner/usage.json` for the gate to read.
+**No official usage API.** Nothing reports how much usage is left. The only source is the Claude Code statusline, which receives `rate_limits` as JSON. That's why the `status` program exists: it saves that data to `~/.claude/backlog-runner/usage.json` for the gate to read.
+
+**No scripts in the plugin.** The plugin directory accepts only Markdown, text, JSON and images from unverified publishers, so 2.0 has no Python. Every exact decision (usage floors, which issues may run, tonight mode, time limit, history) is a small `jq` program written out in the runner's SKILL.md, where anyone can read it; the runner copies them to `~/.claude/backlog-runner/jq/` at the start of each run. The tests in `tests/` (not part of the plugin) run those same programs.
 
 ### Local setup (Windows)
 
 | Problem | Fix |
 |---|---|
 | A tool still "not recognized" right after installing it | The open terminal keeps its old `PATH`. **Close that terminal window (and Claude Code), open a new one**, and run `claude --continue` to resume. The setup skill tries a fresh shell first and tells you when a restart is needed. |
-| `python3` is "not recognized" | Windows installs Python as `py`. Use `py -3` (or `python`) instead of `python3`; the setup skill picks the right one for you. |
-| Error mentioning `tzdata` / unknown time zone | Windows Python ships without time-zone data. Run `py -3 -m pip install tzdata` once. |
-| `jq` / `bash` missing for the usage tracker | **Fixed.** The tracker is now a Python script (`statusline_capture.py`); no `jq`, Git Bash or Node needed. |
+| `jq` "not recognized" | `winget install jqlang.jq`, then open a new terminal. |
+| `usage.json` starts with `jq.exe :` | Windows PowerShell wrapped jq's error output. Wrap the statusline command in `cmd /c "…"` (see Step 4). |
 | `gh` not installed | `winget install GitHub.cli`, then `gh auth login`. To switch accounts: `gh auth logout`. |
 | `claude` not found | Claude Code isn't installed. Install it, then run `claude` once to log in. |
 | Bash commands from this README fail in PowerShell | The snippets are Bash. Run them in Git Bash, or rewrite them for PowerShell (e.g. `foreach ($r in @(...)) { ... }` instead of `for r in ...; do ... done`, and a backtick instead of `\` for line breaks). |
@@ -282,7 +288,7 @@ Problems hit while building and testing the runner, with the fix or workaround f
 |---|---|
 | `gh issue …` / `gh pr …` fail: they use GraphQL, which cloud sessions block. | **Fixed.** The skill uses REST (`gh api …`) only. |
 | Some cloud sessions allow `gh` for search only, so `gh api` fails too. | **Fixed.** The skills switch to the matching GitHub MCP tools automatically. Plain `git` clone/commit/push works. |
-| The issue list for `runner pick` is normally built with `gh api … --jq`. | **Workaround.** Build `/tmp/issues.json` by hand from the MCP output, in the same shape. |
+| The issue list for the `pick` program is normally built with `gh api … --jq`. | **Workaround.** Build `~/.claude/backlog-runner/tmp/issues.json` from the MCP output, in the same shape. |
 | No usage numbers: the statusline never runs in the cloud, so `usage.json` doesn't exist. | **Open.** The gate returns `fallback: true` and each run does at most `fallback_max_tasks` task(s). |
 | The GitHub MCP tools add a "Generated by Claude Code" footer to PR bodies and comments, against the no-attribution rule. | **Fixed.** In that mode the skill edits each new PR body (which removes the footer), posts no issue comments, and writes the run summary into the `runner-log` issue body instead. Editing a comment can't remove the footer; delete old ones by hand. |
 
@@ -292,7 +298,10 @@ Problems hit while building and testing the runner, with the fix or workaround f
 - **`tonight` with no comments means tonight mode is off.** `ask-first` tasks then wait for an `approved` label.
 
 ## Development
+
+The plugin is the [`plugin/`](plugin) folder; that's what gets installed and what to submit to a plugin directory. The repo root holds the marketplace file, this README and the tests.
+
+The tests run the `jq` programs exactly as they appear in the runner's SKILL.md (they need Python 3, pytest and jq; none of this ships with the plugin):
 ```bash
 python3 -m pytest tests -q
 ```
-Python stdlib only.

@@ -7,9 +7,9 @@ description: Use when the user wants to set up, install or configure the backlog
 
 Do the whole setup for the user. They should only answer a few questions; never hand them a list of manual steps you could do yourself.
 
-`RUNNER_DIR` = the sibling folder `../claude-backlog-runner` next to this file (it holds `config.example.json` and `scripts/statusline_capture.py`).
+`RUNNER_DIR` = the sibling folder `../claude-backlog-runner` next to this file (it holds `SKILL.md` with the `jq` programs, and `config.example.json`). `WORK` = `~/.claude/backlog-runner`.
 
-**Python:** `python3` below means Python 3. On Windows it's usually `py -3` (or `python`); find which one works first and use it everywhere, including in the config check, the statusline command and the scheduled prompt.
+**Tools:** the runner needs `git`, `gh` and `jq` (1.6+). No Python.
 
 **GitHub calls:** use `gh api …` (REST). If `gh` is missing or blocked, use the matching GitHub MCP tool (`mcp__github__*`). If neither works, stop and tell the user to connect GitHub (Cowork) or run `gh auth login` (PC).
 
@@ -21,9 +21,9 @@ Do the whole setup for the user. They should only answer a few questions; never 
 
 ## 0. Missing tools (PC)
 
-Check the tools first: `git --version`, `gh --version`, and the Python command (`python3 --version`, on Windows `py -3 --version`). If one is "not found" / "not recognized":
+Check the tools first: `git --version`, `gh --version`, `jq --version`. If one is "not found" / "not recognized":
 
-1. Offer to install it. Windows: `winget install --id Git.Git -e`, `winget install --id GitHub.cli -e`, `winget install --id Python.Python.3.12 -e`. macOS: `brew install git gh python`. Linux: the system package manager.
+1. Offer to install it. Windows: `winget install --id Git.Git -e`, `winget install --id GitHub.cli -e`, `winget install --id jqlang.jq -e`. macOS: `brew install git gh jq`. Linux: the system package manager.
 2. **A terminal that was already open doesn't see the new tool** — it keeps the old `PATH` — so "not found" can repeat right after a successful install. Don't retry in the same shell, and don't treat it as a failed install.
    - **Windows:** run the next commands in a fresh shell that loads the updated `PATH`, e.g.
      `powershell -NoProfile -Command "$env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User'); gh --version"`
@@ -40,13 +40,13 @@ Check the tools first: `git --version`, `gh --version`, and the Python command (
 - Login, name and id: `gh api user --jq '{login, name, id}'` (MCP: `get_me`).
 - Their repos: `gh api "user/repos?per_page=100&sort=pushed" --jq '.[].full_name'`.
 - Where you're running: **PC** if you can read and write `~/.claude/`, else **cloud** (Cowork).
-- Timezone: on a PC, the system timezone (`timedatectl show -p Timezone --value`, or `[System.TimeZoneInfo]::Local.Id` on Windows, mapped to an IANA name). In the cloud, ask.
+- Timezone: on a PC, the system timezone (`timedatectl show -p Timezone --value`, or `[System.TimeZoneInfo]::Local.Id` on Windows, mapped to an IANA name) and its current UTC offset (`date +%:z`, or `(Get-Date).ToString("zzz")` on Windows). In the cloud, ask.
 
 ## 2. Ask, in one go
 
 Use the question tool if you have one, else one short message:
 1. Which repos should the runner work in? Offer their 4 most recently pushed repos as choices.
-2. Timezone: confirm the one you found, or ask for it.
+2. Timezone: confirm the one you found, or ask for it. Note its UTC offset as `+hh:mm`/`-hh:mm` for `utc_offset`. If the timezone uses daylight saving, tell the user the offset needs updating when the clocks change (re-run setup then).
 3. Schedule: when are they usually away? Suggest "work hours + overnight" (e.g. 13:00 and 02:00).
 
 Use defaults for everything else: notes repo `<login>/backlog-notes`, the numbers in `config.example.json`, `git_name` = their GitHub name (or login), `git_email` = `<id>+<login>@users.noreply.github.com`.
@@ -88,25 +88,26 @@ In `backlog-notes`, create each issue only if no open issue has exactly that tit
 
 ## 6. Config
 
-Build the config from `RUNNER_DIR/config.example.json` with the values from steps 1–2 (`repos` = chosen repos, `notes_repo` and `log_repo` = `<login>/backlog-notes`, `fallback_max_tasks` = 1).
+Build the config from `RUNNER_DIR/config.example.json` with the values from steps 1–2 (`repos` = chosen repos, `notes_repo` and `log_repo` = `<login>/backlog-notes`, `timezone` and `utc_offset` from step 2, `fallback_max_tasks` = 1).
 
-- **PC:** write it to `~/backlog-runner/config.json` (create the folder). Check it: from `RUNNER_DIR`, `python3 -m runner gate --config ~/backlog-runner/config.json` must print JSON whose `reason` doesn't start with `bad config`, and `python3 -m runner now --tz <timezone>` must print the time. On Windows, if the second one mentions `tzdata`, run `py -3 -m pip install tzdata` and check again.
+- **PC:** write it to `~/backlog-runner/config.json` (create the folder). Write the `gate` and `now` programs from `RUNNER_DIR/SKILL.md` (section "Programs") to `WORK/jq/gate.jq` and `WORK/jq/now.jq`, copying them exactly with a file-writing tool. Check: `jq -n -f WORK/jq/gate.jq --slurpfile cfg ~/backlog-runner/config.json` must print JSON whose `reason` doesn't start with `bad config`, and `jq -nr -f WORK/jq/now.jq --arg utc_offset <utc_offset>` must print the local time.
 - **Cloud:** keep it for the scheduled prompt in step 8.
 
 ## 7. Usage statusline (PC only)
 
-1. The tracker is a Python script — no `bash` or `jq` needed, on any OS.
-2. In `~/.claude/settings.json` (create it if missing, keep every other key), set:
-   `"statusLine": {"type": "command", "command": "python3 \"<absolute path of RUNNER_DIR>/scripts/statusline_capture.py\""}`
-   using the Python command that works on this machine (`py -3` on Windows) and forward slashes in the path. If a `statusLine` already exists, ask before replacing it.
-   Test it: `echo {"rate_limits":{"five_hour":{"used_percentage":1}}} | <command>` should print `5h 1% · 7d ?%`.
-3. Tell them: restart Claude Code; the statusline should show `5h …% · 7d …%`. The script path contains the plugin version, so re-run this setup after a plugin update.
+1. Write the `status` program from `RUNNER_DIR/SKILL.md` (section "Programs") to `WORK/jq/status.jq`, copying it exactly with a file-writing tool. It prints the usage line and writes the usage data to its error output, which the command below saves.
+2. In `~/.claude/settings.json` (create it if missing, keep every other key), set (absolute paths, forward slashes, also on Windows):
+   `"statusLine": {"type": "command", "command": "jq -r -f \"<WORK>/jq/status.jq\" 2> \"<WORK>/usage.json\""}`
+   If a `statusLine` already exists, ask before replacing it.
+   Test it in a shell: pipe `{"rate_limits":{"five_hour":{"used_percentage":1,"resets_at":9999999999}}}` into the command; it should print `5h 1% · 7d ?%`, and `WORK/usage.json` should then hold JSON starting with `{"five_hour"`.
+3. Tell them: restart Claude Code and send one message; the statusline should show `5h …% · 7d …%`. Then check `WORK/usage.json`: if it isn't plain JSON (e.g. it starts with `jq.exe :` — Windows PowerShell rewrites error output), change the command to `cmd /c "jq -r -f <WORK>/jq/status.jq 2> <WORK>/usage.json"` and check again. If it still isn't JSON, remove the `statusLine` setting: the runner then works without usage data (1 task per run).
+   The program lives in `WORK/jq`, not in the plugin folder, so plugin updates don't break the path; re-run setup after an update to refresh it.
 
 ## 8. Schedule
 
 Prompt for each run:
 - **PC:** `Run the claude-backlog-runner skill using config at ~/backlog-runner/config.json.`
-- **Cloud:** `Write this JSON to /tmp/config.json: <the config as one line>. Then run the claude-backlog-runner skill with CONFIG=/tmp/config.json.`
+- **Cloud:** `Write this JSON to ~/backlog-runner/config.json: <the config as one line>. Then run the claude-backlog-runner skill.`
 
 If this session has a tool for scheduled tasks, create the tasks at the times from step 2, in their timezone. Otherwise give them the prompt and times to add themselves.
 
