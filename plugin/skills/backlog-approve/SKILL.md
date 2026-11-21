@@ -7,7 +7,7 @@ description: Use when the user wants to approve backlog tasks that wait for thei
 
 Let the runner do tasks labelled `ask-first`. Two ways:
 - **Approve specific tasks:** add the `approved` label. It stays until removed, so the runner may do them on any run.
-- **Tonight only:** comment `tonight: go` on the `tonight` issue, after 18:00 (in the config's `timezone`). All `ask-first` tasks may then run until noon tomorrow, then approval lapses. A comment posted before 18:00 doesn't count.
+- **Tonight only:** comment `tonight: go` on the `tonight` issue, after 18:00 (local time, per the config's `utc_offset`). All `ask-first` tasks may then run until noon tomorrow, then approval lapses. A comment posted before 18:00 doesn't count.
 
 **GitHub calls:** use `gh api …` (REST). If `gh` is missing or blocked, use the matching GitHub MCP tool (`mcp__github__*`).
 
@@ -37,7 +37,7 @@ For issues opened by someone else, read their body before approving and point ou
 - **Approve:** add the label without removing others:
   `gh api repos/<repo>/issues/<n>/labels -f "labels[]=approved"`
   (MCP: `issue_write` `update` with the existing labels plus `approved`.)
-- **Tonight only:** only comments posted after 18:00 (config `timezone`) count. If it's earlier than that now, tell the user and offer to approve the tasks with labels instead, or post the comment after 18:00. Otherwise find the open issue titled exactly `tonight` in `log_repo` and comment `tonight: go`. This must be posted as the user (`owner`) — the runner ignores anyone else. If the tool you'd use would add any extra text to the comment, tell the user and ask them to post `tonight: go` themselves instead.
+- **Tonight only:** only comments posted after 18:00 (config `utc_offset`) count. If it's earlier than that now, tell the user and offer to approve the tasks with labels instead, or post the comment after 18:00. Otherwise find the open issue titled exactly `tonight` in `log_repo` and comment `tonight: go`. This must be posted as the user (`owner`) — the runner ignores anyone else. If the tool you'd use would add any extra text to the comment, tell the user and ask them to post `tonight: go` themselves instead.
 
 ## 5. Report
 

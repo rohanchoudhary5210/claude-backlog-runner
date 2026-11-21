@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "backlog-runner",
-      "source": "./",
+      "source": "./plugin",
       "description": "Spend leftover Claude usage on your low-priority GitHub backlog: branches and draft PRs only, within usage floors."
     }
   ]
